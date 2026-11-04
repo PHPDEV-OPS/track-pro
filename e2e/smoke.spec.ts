@@ -24,6 +24,15 @@ test("signed in: start, reload and discard a focus session (AC-1, AC-3, AC-7)", 
   const discard = page.getByRole("button", { name: "Discard session" });
   if (await discard.isVisible()) await discard.click();
 
+  // Background sound control (spec 0002 AC-1): labelled picker and slider, slider off when sound is Off.
+  const picker = page.getByRole("combobox", { name: "Background sound" });
+  const slider = page.getByRole("slider", { name: "Sound volume" });
+  await picker.selectOption("OFF");
+  await expect(slider).toBeDisabled();
+  await picker.selectOption("BROWN");
+  await expect(slider).toBeEnabled();
+  await picker.selectOption("OFF");
+
   await page.getByRole("button", { name: "25m" }).click();
   await page.getByRole("button", { name: "Start focus" }).click();
   await expect(page.getByText("Focusing")).toBeVisible();

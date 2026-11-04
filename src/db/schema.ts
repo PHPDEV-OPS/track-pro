@@ -1,8 +1,11 @@
-import { index, integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { check, index, integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { createId } from "@/lib/id";
+import { AMBIENT_SOUNDS } from "@/lib/sounds";
 
 export const clockStyle = pgEnum("clock_style", ["DIGITAL", "WALL_CLOCK"]);
 export const sessionStatus = pgEnum("session_status", ["RUNNING", "PAUSED"]);
+export const ambientSound = pgEnum("ambient_sound", AMBIENT_SOUNDS);
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(), // Clerk user id
@@ -11,16 +14,22 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const userSettings = pgTable("user_settings", {
-  id: text("id").primaryKey().$defaultFn(createId),
-  userId: text("user_id")
-    .notNull()
-    .unique()
-    .references(() => users.id, { onDelete: "cascade" }),
-  clockStyle: clockStyle("clock_style").notNull().default("DIGITAL"),
-  theme: text("theme").notNull().default("system"),
-  timezone: text("timezone").notNull().default("UTC"),
-});
+export const userSettings = pgTable(
+  "user_settings",
+  {
+    id: text("id").primaryKey().$defaultFn(createId),
+    userId: text("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    clockStyle: clockStyle("clock_style").notNull().default("DIGITAL"),
+    theme: text("theme").notNull().default("system"),
+    timezone: text("timezone").notNull().default("UTC"),
+    ambientSound: ambientSound("ambient_sound").notNull().default("OFF"),
+    ambientVolume: integer("ambient_volume").notNull().default(50),
+  },
+  (t) => [check("ambient_volume_range", sql`${t.ambientVolume} between 0 and 100`)],
+);
 
 export const timeEntries = pgTable(
   "time_entries",

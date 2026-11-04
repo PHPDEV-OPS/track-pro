@@ -7,7 +7,15 @@ import { buildDays } from "@/lib/heatmap";
 
 export async function getSettings(userId: string) {
   const row = await getDb().query.userSettings.findFirst({ where: eq(userSettings.userId, userId) });
-  return row ?? { clockStyle: "DIGITAL" as const, theme: "system", timezone: "UTC" };
+  return (
+    row ?? {
+      clockStyle: "DIGITAL" as const,
+      theme: "system",
+      timezone: "UTC",
+      ambientSound: "OFF" as const,
+      ambientVolume: 50,
+    }
+  );
 }
 
 const localDay = (tz: string) =>

@@ -9,13 +9,15 @@ vi.mock("@clerk/nextjs/server", () => ({
   auth: async () => ({ userId: clerk.userId }),
   currentUser: async () => ({ primaryEmailAddress: { emailAddress: `${clerk.userId}@test.local` }, emailAddresses: [] }),
 }));
-vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+const cache = vi.hoisted(() => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => cache);
 
 import { getDb } from "@/db";
 import { activeSessions, timeEntries, userSettings, users } from "@/db/schema";
 import { completeSession, getActiveSession, pauseSession, resumeSession, startSession } from "@/actions/session";
 import { deleteEntry, getDayEntries, updateEntry } from "@/actions/entries";
-import { getHeatmap } from "@/lib/queries";
+import { updateSettings } from "@/actions/settings";
+import { getHeatmap, getSettings } from "@/lib/queries";
 import { elapsedSec } from "@/lib/timer";
 import { requireUser } from "@/lib/user";
 
@@ -147,5 +149,44 @@ describe.skipIf(!process.env.DATABASE_URL)("server actions on the test database"
     expect((await getDayEntries(day)).map((e) => e.id)).toEqual([entry.id]);
     const [row] = await getDb().select().from(timeEntries).where(eq(timeEntries.id, entry.id));
     expect(row.notes).toBeNull();
+  });
+
+  it("defaults to no sound at volume 50 and keeps the choice per user (spec 0002 AC-2, AC-8)", async () => {
+    as(A);
+    await getDb().update(userSettings).set({ ambientSound: "OFF", ambientVolume: 50 }).where(eq(userSettings.userId, A));
+    expect(await getSettings(A)).toMatchObject({ ambientSound: "OFF", ambientVolume: 50 });
+    expect(await getSettings("no_such_user")).toMatchObject({ ambientSound: "OFF", ambientVolume: 50 });
+
+    as(B);
+    await getDb().update(userSettings).set({ ambientSound: "OFF", ambientVolume: 50 }).where(eq(userSettings.userId, B));
+    cache.revalidatePath.mockClear();
+    await updateSettings({ ambientSound: "RAIN", ambientVolume: 30 });
+    expect(await getSettings(B)).toMatchObject({ ambientSound: "RAIN", ambientVolume: 30 });
+    // Only B's row changed, and a sound only change does not re render the dashboard.
+    expect(await getSettings(A)).toMatchObject({ ambientSound: "OFF", ambientVolume: 50 });
+    expect(cache.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { ambientVolume: 101 },
+    { ambientVolume: -1 },
+    { ambientVolume: 33.5 },
+    { ambientSound: "JAZZ" },
+  ])("rejects %o and saves nothing (spec 0002 AC-8)", async (bad) => {
+    as(A);
+    await getDb().update(userSettings).set({ ambientSound: "BROWN", ambientVolume: 70 }).where(eq(userSettings.userId, A));
+    await expect(updateSettings(bad as never)).rejects.toThrow();
+    expect(await getSettings(A)).toMatchObject({ ambientSound: "BROWN", ambientVolume: 70 });
+  });
+
+  it("rejects sound settings when signed out (spec 0002 AC-8)", async () => {
+    clerk.userId = null;
+    await expect(updateSettings({ ambientVolume: 10 })).rejects.toThrow("UNAUTHENTICATED");
+  });
+
+  it("enforces the volume range in the database too (spec 0002 invariant)", async () => {
+    await expect(
+      getDb().update(userSettings).set({ ambientVolume: 101 }).where(eq(userSettings.userId, A)),
+    ).rejects.toThrow();
   });
 });

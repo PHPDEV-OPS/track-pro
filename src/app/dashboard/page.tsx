@@ -21,7 +21,12 @@ export default async function DashboardPage() {
       <ThemeSync theme={settings.theme} />
       <TimezoneDetect timezone={settings.timezone} />
       <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
-        <FocusClock initialSession={session} clockStyle={settings.clockStyle} />
+        <FocusClock
+          initialSession={session}
+          clockStyle={settings.clockStyle}
+          initialSound={settings.ambientSound}
+          initialVolume={settings.ambientVolume}
+        />
         <History cells={heatmap.cells} />
       </main>
     </>

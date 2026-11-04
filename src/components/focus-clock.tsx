@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { Maximize2, Minimize2, Pause, Play, Square, X } from "lucide-react";
 import {
   completeSession,
@@ -10,8 +10,11 @@ import {
   startSession,
   type SessionDTO,
 } from "@/actions/session";
+import { ambient } from "@/lib/ambient";
+import type { AmbientSound } from "@/lib/sounds";
 import { elapsedSec, formatClock, MIN_SAVE_SEC } from "@/lib/timer";
 import { CompleteDialog } from "./complete-dialog";
+import { SoundControl, useSoundSettings } from "./sound-control";
 import { WallClock } from "./wall-clock";
 
 const STORE = "trackpro.session";
@@ -53,12 +56,18 @@ function chime() {
   }
 }
 
+const subscribeAudio = (fn: () => void) => ambient().subscribe(fn);
+
 export function FocusClock({
   initialSession,
   clockStyle,
+  initialSound,
+  initialVolume,
 }: {
   initialSession: SessionDTO | null;
   clockStyle: "DIGITAL" | "WALL_CLOCK";
+  initialSound: AmbientSound;
+  initialVolume: number;
 }) {
   const [session, setSession] = useState<SessionDTO | null>(initialSession);
   const [now, setNow] = useState(() => Date.now());
@@ -70,6 +79,9 @@ export function FocusClock({
   const chimed = useRef(false);
   const panel = useRef<HTMLElement>(null);
   const [full, setFull] = useState(false);
+  const { sound, volume, setSound, setVolume } = useSoundSettings(initialSound, initialVolume);
+  // Audio can only start after a click in this tab (browser autoplay rules, AC-6).
+  const audioOn = useSyncExternalStore(subscribeAudio, () => ambient().unlocked, () => false);
 
   // Focus mode: the timer panel goes full screen with a huge clock (good for recording).
   useEffect(() => {
@@ -106,6 +118,16 @@ export function FocusClock({
     return () => clearInterval(id);
   }, [running]);
 
+  // The background sound follows the session: plays only while RUNNING (AC-3, AC-4).
+  useEffect(() => {
+    ambient().sync(running, sound, volume);
+  }, [running, sound, volume, audioOn]);
+  useEffect(() => () => ambient().sync(false, "OFF", 0), []);
+
+  function unlockAudio(s: AmbientSound = sound) {
+    if (s !== "OFF") ambient().unlock();
+  }
+
   const elapsed = session ? elapsedSec(session, now) : 0;
   const remaining = session ? session.targetSec - elapsed : 0;
 
@@ -116,6 +138,7 @@ export function FocusClock({
     }
     if (remaining <= 0 && !chimed.current && running) {
       chimed.current = true;
+      ambient().duck();
       chime();
     }
   }, [remaining, session, running]);
@@ -148,6 +171,7 @@ export function FocusClock({
       return;
     }
     chimed.current = false;
+    unlockAudio();
     run(() => startSession({ targetSec }));
   }
 
@@ -263,7 +287,10 @@ export function FocusClock({
             ) : (
               <button
                 type="button"
-                onClick={() => run(resumeSession)}
+                onClick={() => {
+                  unlockAudio();
+                  run(resumeSession);
+                }}
                 disabled={pending}
                 className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2"
               >
@@ -314,6 +341,17 @@ export function FocusClock({
           </div>
         </div>
       )}
+      <SoundControl
+        sound={sound}
+        volume={volume}
+        onSound={(s) => {
+          unlockAudio(s);
+          setSound(s);
+        }}
+        onVolume={setVolume}
+        needsTap={running && sound !== "OFF" && !audioOn}
+        onTap={() => unlockAudio()}
+      />
       {error && (
         <p role="alert" className="mt-4 text-center text-sm text-danger">
           {error}
