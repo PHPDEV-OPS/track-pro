@@ -1,26 +1,102 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
+/* Semantic tokens. Each theme overrides these and the five heatmap levels. */
+:root,
+[data-theme="light"] {
+  --background: #fafafa;
   --foreground: #171717;
+  --card: #ffffff;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #059669;
+  --accent-fg: #ffffff;
+  --danger: #dc2626;
+  --heat-0: #ebedf0;
+  --heat-1: #c6e9d2;
+  --heat-2: #7bcf9a;
+  --heat-3: #2fa866;
+  --heat-4: #047857;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --background: #0a0a0b;
+  --foreground: #ededed;
+  --card: #131316;
+  --muted: #9ca3af;
+  --border: #26262c;
+  --accent: #10b981;
+  --accent-fg: #04130d;
+  --danger: #f87171;
+  --heat-0: #1c1c21;
+  --heat-1: #0e4a33;
+  --heat-2: #0f7a50;
+  --heat-3: #14a86b;
+  --heat-4: #34d399;
+  color-scheme: dark;
+}
+
+[data-theme="matrix"] {
+  --background: #000800;
+  --foreground: #3dff7a;
+  --card: #021102;
+  --muted: #1fa84d;
+  --border: #0b3d1a;
+  --accent: #ffb000;
+  --accent-fg: #000800;
+  --danger: #ff5555;
+  --heat-0: #06170a;
+  --heat-1: #0b4a1c;
+  --heat-2: #148a33;
+  --heat-3: #25d457;
+  --heat-4: #ffb000;
+  color-scheme: dark;
+}
+
+[data-theme="cyberpunk"] {
+  --background: #0d0221;
+  --foreground: #f5e9ff;
+  --card: #170536;
+  --muted: #a78bcf;
+  --border: #35146b;
+  --accent: #ff2bd6;
+  --accent-fg: #0d0221;
+  --danger: #ff5c7a;
+  --heat-0: #1a0838;
+  --heat-1: #4a1475;
+  --heat-2: #8a1fa8;
+  --heat-3: #e11fc5;
+  --heat-4: #00f0ff;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-heat-0: var(--heat-0);
+  --color-heat-1: var(--heat-1);
+  --color-heat-2: var(--heat-2);
+  --color-heat-3: var(--heat-3);
+  --color-heat-4: var(--heat-4);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
