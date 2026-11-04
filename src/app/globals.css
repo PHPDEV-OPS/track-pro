@@ -8,7 +8,7 @@
   --card: #ffffff;
   --muted: #6b7280;
   --border: #e5e7eb;
-  --accent: #059669;
+  --accent: #047857;
   --accent-fg: #ffffff;
   --danger: #dc2626;
   --heat-0: #ebedf0;
@@ -84,8 +84,25 @@
   --color-heat-2: var(--heat-2);
   --color-heat-3: var(--heat-3);
   --color-heat-4: var(--heat-4);
+  /* Derived per theme at the point of use, so all five themes stay in step (spec 0006).
+     Utilities inline these; outside utilities (SVG, :focus-visible) use the raw --accent and --heat-N. */
+  --color-focus: var(--accent);
+  --color-accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+/* Tailwind v4 leaves buttons with the default cursor; everything clickable gets the pointer. */
+button:not(:disabled),
+select:not(:disabled),
+[role="button"] {
+  cursor: pointer;
+}
+
+/* One visible keyboard focus ring everywhere (spec 0006 AC-11). */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 body {

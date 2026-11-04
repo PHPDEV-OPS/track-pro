@@ -4,30 +4,40 @@ import { AppHeader } from "@/components/app-header";
 import { FocusClock } from "@/components/focus-clock";
 import { History } from "@/components/history";
 import { ThemeSync, TimezoneDetect } from "@/components/settings-form";
-import { getHeatmap, getSettings } from "@/lib/queries";
+import { getMusicLinks, getPeriodStats, getSettings } from "@/lib/queries";
+import { choiceOf } from "@/lib/sounds";
 import { requireUser } from "@/lib/user";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   const userId = await requireUser();
   const settings = await getSettings(userId);
-  const [session, heatmap] = await Promise.all([getActiveSession(), getHeatmap(userId, settings.timezone)]);
+  // The view and period live in the address, so reloads, back and bookmarks keep them (spec 0004 AC-6).
+  const { view, period } = await searchParams;
+  const [session, stats, musicLinks] = await Promise.all([
+    getActiveSession(),
+    getPeriodStats(userId, settings.timezone, view, period),
+    getMusicLinks(userId),
+  ]);
 
   return (
     <>
       <AppHeader />
       <ThemeSync theme={settings.theme} />
       <TimezoneDetect timezone={settings.timezone} />
-      <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-4 py-6">
+      {/* Split from 1024 px: the timer stays in view while history scrolls (spec 0006 AC-3). */}
+      <main className="mx-auto grid w-full max-w-6xl flex-1 content-start items-start gap-6 px-4 py-6 lg:grid-cols-[400px_minmax(0,1fr)]">
         <FocusClock
+          userId={userId}
           initialSession={session}
           clockStyle={settings.clockStyle}
-          initialSound={settings.ambientSound}
+          initialChoice={choiceOf(settings)}
+          musicLinks={musicLinks}
           initialVolume={settings.ambientVolume}
         />
-        <History cells={heatmap.cells} />
+        <History stats={stats} />
       </main>
     </>
   );

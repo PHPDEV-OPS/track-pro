@@ -25,11 +25,12 @@ export function buildDays(today: string, secByDay: Record<string, number>): Cell
   return cells;
 }
 
-/** Weeks of 7 cells (Sunday first), padded at the start so columns align like GitHub. */
-export function toWeeks(cells: Cell[]): (Cell | null)[][] {
+/** Weeks of 7 cells (Monday first), padded at the start so columns align like GitHub. */
+export function toWeeks<T extends Cell>(cells: T[]): (T | null)[][] {
   const first = new Date(`${cells[0].date}T12:00:00`);
-  const padded: (Cell | null)[] = Array(first.getDay()).fill(null).concat(cells);
-  const weeks: (Cell | null)[][] = [];
+  // Rows start on Monday (spec 0004 AC-3).
+  const padded: (T | null)[] = Array((first.getDay() + 6) % 7).fill(null).concat(cells);
+  const weeks: (T | null)[][] = [];
   for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i + 7));
   return weeks;
 }

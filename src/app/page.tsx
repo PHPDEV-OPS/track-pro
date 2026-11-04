@@ -41,7 +41,7 @@ export default function Home() {
         </div>
       </div>
       <div aria-hidden className="pointer-events-none select-none">
-        <Heatmap cells={sample()} />
+        <Heatmap cells={sample()} heading="A year of focus" />
       </div>
     </main>
   );

@@ -5,10 +5,13 @@ import { ImageDrop } from "./image-drop";
 
 export function CompleteDialog({
   durationLabel,
+  offline = false,
   onSave,
   onCancel,
 }: {
   durationLabel: string;
+  /** Offline the session still saves (queued, spec 0003), but images need a connection. */
+  offline?: boolean;
   onSave: (v: { notes: string; imageUrl: string | null }) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -63,7 +66,13 @@ export function CompleteDialog({
             placeholder="What did you ship?"
           />
         </label>
-        <ImageDrop value={imageUrl} onChange={setImageUrl} onBusy={setUploading} />
+        {offline ? (
+          <p className="rounded-lg border border-dashed border-border p-3 text-sm text-muted">
+            You&apos;re offline. Add it later from the day view.
+          </p>
+        ) : (
+          <ImageDrop value={imageUrl} onChange={setImageUrl} onBusy={setUploading} />
+        )}
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}

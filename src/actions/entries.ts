@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { timeEntries } from "@/db/schema";
 import { blobImageUrl } from "@/lib/blob";
-import { getEntriesForDay, getSettings } from "@/lib/queries";
+import { getSessionsPage, getSettings } from "@/lib/queries";
 import { requireUser } from "@/lib/user";
 
 const updateSchema = z.object({
@@ -31,18 +31,27 @@ export async function updateEntry(input: z.input<typeof updateSchema>) {
   revalidatePath("/dashboard");
 }
 
-export async function getDayEntries(day: string) {
-  const parsed = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).parse(day);
+const sessionsSchema = z.object({
+  view: z.string().optional(),
+  period: z.string().optional(),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+  cursor: z
+    .string()
+    .regex(/^[^|]+\|[0-9a-f]{32}$/)
+    .nullish(),
+});
+
+/** The sessions list under the history chart (spec 0006): 20 at a time, newest first. */
+export async function getSessions(input: z.input<typeof sessionsSchema>) {
+  const data = sessionsSchema.parse(input);
   const userId = await requireUser();
   const { timezone } = await getSettings(userId);
-  const rows = await getEntriesForDay(userId, timezone, parsed);
-  return rows.map((r) => ({
-    id: r.id,
-    durationSec: r.durationSec,
-    startedAt: r.startedAt.toISOString(),
-    notes: r.notes,
-    imageUrl: r.imageUrl,
-  }));
+  let cursor: { at: Date; id: string } | null = null;
+  if (data.cursor) {
+    const [at, id] = data.cursor.split("|");
+    if (!Number.isNaN(new Date(at).getTime())) cursor = { at: new Date(at), id };
+  }
+  return getSessionsPage(userId, timezone, data.view, data.period, data.day ?? null, cursor);
 }
 
 export async function deleteEntry(id: string) {

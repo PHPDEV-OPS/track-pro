@@ -5,7 +5,9 @@ import type { AmbientSound } from "@/lib/sounds";
 const FADE_IN = 1;
 const FADE_OUT = 0.6;
 const CROSSFADE = 1;
-const DUCK = { level: 0.2, down: 0.1, total: 1.5 };
+// The target bell: three strikes, and the background dips for the whole ring.
+const RING = { strikes: 3, gap: 1, decay: 1.6 };
+const DUCK = { level: 0.15, down: 0.1, total: RING.strikes * RING.gap + 1 };
 const LOOP_SEC = 8;
 
 type Rand = () => number;
@@ -164,7 +166,37 @@ class AmbientEngine {
     }
   }
 
-  /** Dip the background briefly so the target chime is heard. */
+  /**
+   * Rings a bell when the session reaches its target (spec 0002 AC-5): a few struck notes with
+   * inharmonic partials, straight to the speakers, while the background dips and then carries on.
+   */
+  ring() {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    try {
+      const start = ctx.currentTime + 0.05;
+      for (let i = 0; i < RING.strikes; i++) {
+        const at = start + i * RING.gap;
+        // A small bell: fundamental plus the slightly sharp partials that make metal sound like metal.
+        for (const [mult, level] of [[1, 0.22], [2.76, 0.08], [5.4, 0.04]] as const) {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.frequency.value = 880 * mult;
+          g.gain.setValueAtTime(0, at);
+          g.gain.linearRampToValueAtTime(level, at + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, at + RING.decay / mult ** 0.5);
+          o.connect(g).connect(ctx.destination);
+          o.start(at);
+          o.stop(at + RING.decay + 0.1);
+        }
+      }
+      this.duck();
+    } catch {
+      /* an audio failure leaves the timer working and silent */
+    }
+  }
+
+  /** Dip the background so the target bell is heard. */
   duck() {
     const ctx = this.ctx;
     if (!ctx || !this.playing) return;

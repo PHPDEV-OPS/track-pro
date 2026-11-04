@@ -1,118 +1,119 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
-import { deleteEntry, getDayEntries, updateEntry } from "@/actions/entries";
-import type { Cell } from "@/lib/heatmap";
-import { formatClock } from "@/lib/timer";
+import dynamic from "next/dynamic";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { PeriodStats } from "@/lib/queries";
+import { VIEWS, type View } from "@/lib/periods";
 import { Heatmap } from "./heatmap";
-import { ImageDrop } from "./image-drop";
+import { SessionsList } from "./sessions-list";
 
-type DayEntry = Awaited<ReturnType<typeof getDayEntries>>[number];
+// Recharts only loads for Week and Month, so the default Year view pays nothing for it (spec 0004).
+const PeriodChart = dynamic(() => import("./period-chart"), {
+  ssr: false,
+  loading: () => <div className="h-56" aria-hidden />,
+});
 
-export function History({ cells }: { cells: Cell[] }) {
-  const [day, setDay] = useState<string | null>(null);
-  const [entries, setEntries] = useState<DayEntry[] | null>(null);
-  const [pending, start] = useTransition();
+const VIEW_LABEL: Record<View, string> = { week: "Week", month: "Month", year: "Year" };
 
-  function open(date: string) {
-    setDay(date);
-    setEntries(null);
-    start(async () => setEntries(await getDayEntries(date)));
-  }
-
-  const refresh = () => day && start(async () => setEntries(await getDayEntries(day)));
-
-  return (
-    <div className="space-y-4">
-      <Heatmap cells={cells} selected={day} onSelectDay={open} />
-      {day && (
-        <section aria-label="Day details" className="rounded-xl border border-border bg-card p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium">{format(new Date(`${day}T12:00:00`), "EEEE, MMM d")}</h2>
-            <button type="button" onClick={() => setDay(null)} className="text-xs text-muted">
-              Close
-            </button>
-          </div>
-          {entries === null || pending ? (
-            <p className="text-sm text-muted">Loading...</p>
-          ) : entries.length === 0 ? (
-            <p className="text-sm text-muted">No focus sessions this day.</p>
-          ) : (
-            <ul className="space-y-3">
-              {entries.map((e) => (
-                <EntryRow key={e.id} entry={e} onChanged={refresh} />
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-    </div>
-  );
+function hm(sec: number) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.round((sec % 3600) / 60);
+  return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-function EntryRow({ entry, onChanged }: { entry: DayEntry; onChanged: () => void }) {
-  const [notes, setNotes] = useState(entry.notes ?? "");
-  const [imageUrl, setImageUrl] = useState(entry.imageUrl);
-  const [saved, setSaved] = useState(true);
+/** The history column: view tabs, period arrows, stats row, chart or heatmap, sessions list (spec 0006 AC-5). */
+export function History({ stats }: { stats: PeriodStats }) {
+  const router = useRouter();
+  const path = usePathname();
   const [pending, start] = useTransition();
+  const [day, setDay] = useState<string | null>(null);
+
+  function go(view: View, period?: string | null) {
+    const q = new URLSearchParams({ view });
+    if (period) q.set("period", period);
+    setDay(null);
+    start(() => router.push(`${path}?${q}`, { scroll: false }));
+  }
+
+  const change = stats.change;
+  const changeText = !change
+    ? "No change"
+    : "upFromZero" in change
+      ? "Up from 0"
+      : `${change.pct > 0 ? "+" : ""}${change.pct}%`;
+  const changeHint = stats.view === "year" ? "vs last year" : `vs last ${stats.view}`;
+  const toggleDay = (d: string) => setDay((cur) => (cur === d ? null : d));
 
   return (
-    <li className="space-y-2 rounded-lg border border-border p-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-mono">{formatClock(entry.durationSec)}</span>
-        <span className="text-muted">{format(new Date(entry.startedAt), "p")}</span>
-        <button
-          type="button"
-          aria-label="Delete session"
-          className="text-muted hover:text-danger"
-          onClick={() => {
-            if (confirm("Delete this session?")) start(async () => {
-              await deleteEntry(entry.id);
-              onChanged();
-            });
-          }}
-        >
-          <Trash2 className="size-4" />
-        </button>
+    <section aria-labelledby="history-title" className="space-y-5 rounded-xl border border-border bg-card p-4 sm:p-6">
+      <h2 id="history-title" className="sr-only">
+        Focus history
+      </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div role="group" aria-label="History range" className="inline-flex rounded-lg border border-border p-1">
+          {VIEWS.map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={stats.view === v}
+              onClick={() => stats.view !== v && go(v)}
+              className={`h-9 rounded-md px-4 text-sm ${stats.view === v ? "bg-accent-soft font-semibold" : "text-muted hover:text-foreground"}`}
+            >
+              {VIEW_LABEL[v]}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label={`Previous ${stats.view}`}
+            disabled={!stats.prevKey || pending}
+            onClick={() => go(stats.view, stats.prevKey)}
+            className="inline-flex size-11 items-center justify-center rounded-lg text-muted hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronLeft className="size-5" aria-hidden />
+          </button>
+          <p className="min-w-36 text-center text-sm font-semibold" aria-live="polite">
+            {stats.label}
+          </p>
+          <button
+            type="button"
+            aria-label={`Next ${stats.view}`}
+            disabled={!stats.nextKey || pending}
+            onClick={() => go(stats.view, stats.nextKey)}
+            className="inline-flex size-11 items-center justify-center rounded-lg text-muted hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronRight className="size-5" aria-hidden />
+          </button>
+        </div>
       </div>
-      <textarea
-        aria-label="Notes"
-        value={notes}
-        maxLength={2000}
-        rows={2}
-        onChange={(e) => {
-          setNotes(e.target.value);
-          setSaved(false);
-        }}
-        className="w-full rounded-lg border border-border bg-background p-2 text-sm"
-        placeholder="Add a note"
-      />
-      <ImageDrop
-        value={imageUrl}
-        onChange={(url) => {
-          setImageUrl(url);
-          start(async () => {
-            await updateEntry({ id: entry.id, imageUrl: url });
-          });
-        }}
-      />
-      {!saved && (
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() =>
-            start(async () => {
-              await updateEntry({ id: entry.id, notes });
-              setSaved(true);
-            })
-          }
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-fg"
-        >
-          Save note
-        </button>
-      )}
-    </li>
+
+      <div className={`space-y-5 transition-opacity duration-150 ${pending ? "opacity-50" : ""}`} aria-busy={pending}>
+        {pending && <p className="sr-only">Loading</p>}
+        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            ["Focused", hm(stats.totalSec)],
+            ["Daily average", hm(stats.averageSec)],
+            ["Sessions", String(stats.sessions)],
+            [changeHint, changeText],
+          ].map(([k, v]) => (
+            <div key={k} className="flex flex-col-reverse">
+              <dt className="text-xs text-muted">{k}</dt>
+              <dd className="font-mono text-xl font-semibold tabular-nums">{v}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {stats.view === "year" ? (
+          <Heatmap cells={stats.days} selected={day} onSelectDay={toggleDay} />
+        ) : (
+          <PeriodChart days={stats.days} view={stats.view} selected={day} onSelectDay={toggleDay} />
+        )}
+
+        <SessionsList view={stats.view} period={stats.key} day={day} onClearDay={() => setDay(null)} />
+      </div>
+    </section>
   );
 }

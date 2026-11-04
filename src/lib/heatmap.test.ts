@@ -11,8 +11,10 @@ describe("heatmap", () => {
     expect(cells.at(-1)).toMatchObject({ date: "2026-10-24", minutes: 240, level: 4 });
     expect(tooltipText(cells.at(-1)!)).toBe("4h focused on Oct 24");
   });
-  it("pads weeks so every row has at most 7 cells", () => {
+  it("pads weeks so rows start on Monday and hold at most 7 cells", () => {
     const weeks = toWeeks(buildDays("2026-10-24", {}));
     expect(weeks.every((w) => w.length <= 7)).toBe(true);
+    // 2025-10-25 is a Saturday, so it sits in row 6 (Mon is row 1).
+    expect(weeks[0].findIndex(Boolean)).toBe(5);
   });
 });
