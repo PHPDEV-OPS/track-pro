@@ -43,3 +43,10 @@ next-env.d.ts
 !.env.example
 
 !.env.example
+
+/docs
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

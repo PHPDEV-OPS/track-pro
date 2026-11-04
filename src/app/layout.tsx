@@ -8,9 +8,19 @@ import "./globals.css";
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+// Absolute base for OG and canonical URLs; Vercel sets the production host at build time.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+
+const description = "A minimalist focus timer that turns deep work into a contribution style history grid.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "track-pro", template: "%s · track-pro" },
-  description: "A minimalist focus timer that turns deep work into a contribution style history grid.",
+  description,
+  openGraph: { type: "website", siteName: "track-pro", title: "track-pro", description },
+  twitter: { card: "summary_large_image", title: "track-pro", description },
 };
 
 export const viewport: Viewport = { themeColor: "#0a0a0b" };

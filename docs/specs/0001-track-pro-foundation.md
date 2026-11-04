@@ -1,7 +1,7 @@
 # 0001. track-pro foundation: stack, data model and core features
 
 **Date**: 2026-11-04
-**Status**: Proposed
+**Status**: In Progress
 
 ## Summary
 

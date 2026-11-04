@@ -5,13 +5,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { timeEntries } from "@/db/schema";
+import { blobImageUrl } from "@/lib/blob";
 import { getEntriesForDay, getSettings } from "@/lib/queries";
 import { requireUser } from "@/lib/user";
 
 const updateSchema = z.object({
   id: z.string().min(1),
   notes: z.string().max(2000).nullish(),
-  imageUrl: z.string().url().nullish(),
+  imageUrl: blobImageUrl.nullish(),
 });
 
 export async function updateEntry(input: z.input<typeof updateSchema>) {

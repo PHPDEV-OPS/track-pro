@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { Pause, Play, Square, X } from "lucide-react";
+import { Maximize2, Minimize2, Pause, Play, Square, X } from "lucide-react";
 import {
   completeSession,
   discardSession,
@@ -68,6 +68,20 @@ export function FocusClock({
   const [completing, setCompleting] = useState(false);
   const [pending, startTransition] = useTransition();
   const chimed = useRef(false);
+  const panel = useRef<HTMLElement>(null);
+  const [full, setFull] = useState(false);
+
+  // Focus mode: the timer panel goes full screen with a huge clock (good for recording).
+  useEffect(() => {
+    const onChange = () => setFull(document.fullscreenElement === panel.current);
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  function toggleFull() {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else if (panel.current?.requestFullscreen) panel.current.requestFullscreen().catch(() => {});
+  }
 
   const apply = useCallback((s: SessionDTO | null) => {
     setSession(s);
@@ -144,7 +158,15 @@ export function FocusClock({
     : "No active session";
 
   return (
-    <section aria-label="Focus timer" className="rounded-xl border border-border bg-card p-6">
+    <section
+      ref={panel}
+      aria-label="Focus timer"
+      className={
+        full
+          ? "flex flex-col items-center justify-center bg-background p-6"
+          : "rounded-xl border border-border bg-card p-6 sm:p-10"
+      }
+    >
       {!session ? (
         <form
           onSubmit={(e) => {
@@ -153,7 +175,7 @@ export function FocusClock({
           }}
           className="mx-auto flex max-w-sm flex-col items-center gap-4"
         >
-          <p className="font-mono text-6xl tabular-nums text-muted">{formatClock(Number(mins) * (unit === "hr" ? 3600 : 60) || 0)}</p>
+          <p className="font-mono text-[clamp(3.5rem,14vw,8rem)] leading-none tabular-nums text-muted">{formatClock(Number(mins) * (unit === "hr" ? 3600 : 60) || 0)}</p>
           <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Presets">
             {PRESETS.map((p) => (
               <button
@@ -202,16 +224,21 @@ export function FocusClock({
         <div className="flex flex-col items-center gap-5">
           {clockStyle === "WALL_CLOCK" ? (
             <div className="flex flex-col items-center">
-              <WallClock elapsedSec={elapsed} targetSec={session.targetSec} label={label} />
-              <p className="mt-2 font-mono text-2xl tabular-nums" aria-hidden>
+              <WallClock
+                elapsedSec={elapsed}
+                targetSec={session.targetSec}
+                label={label}
+                className={full ? "w-[min(75vh,90vw)]" : undefined}
+              />
+              <p className={`mt-3 font-mono tabular-nums ${full ? "text-5xl" : "text-3xl"}`} aria-hidden>
                 {formatClock(remaining)}
               </p>
             </div>
           ) : (
             <p
-              className={`font-mono text-7xl font-semibold tabular-nums sm:text-8xl ${
-                remaining < 0 ? "text-accent" : ""
-              }`}
+              className={`font-mono font-semibold leading-none tracking-tight tabular-nums ${
+                full ? "text-[min(24vw,45vh)]" : "text-[clamp(4.5rem,19vw,12rem)]"
+              } ${remaining < 0 ? "text-accent" : ""}`}
               aria-hidden
             >
               {formatClock(remaining)}
@@ -274,6 +301,15 @@ export function FocusClock({
               className="rounded-lg border border-border p-2 text-muted"
             >
               <X className="size-4" />
+            </button>
+            <button
+              type="button"
+              aria-label={full ? "Exit focus mode" : "Enter focus mode"}
+              title={full ? "Exit focus mode (Esc)" : "Focus mode"}
+              onClick={toggleFull}
+              className="rounded-lg border border-border p-2 text-muted"
+            >
+              {full ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/db";
 import { activeSessions, timeEntries } from "@/db/schema";
+import { blobImageUrl } from "@/lib/blob";
 import { requireUser } from "@/lib/user";
 import { elapsedSec, MAX_TARGET_SEC, MIN_SAVE_SEC, MIN_TARGET_SEC } from "@/lib/timer";
 
@@ -82,7 +83,7 @@ export async function resumeSession(): Promise<SessionDTO> {
 
 const completeSchema = z.object({
   notes: z.string().max(2000).nullish(),
-  imageUrl: z.string().url().nullish(),
+  imageUrl: blobImageUrl.nullish(),
 });
 
 /** Duration is derived on the server from the active session, never from the client (AC-6). */

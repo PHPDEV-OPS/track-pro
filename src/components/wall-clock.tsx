@@ -1,12 +1,13 @@
 type Props = {
   elapsedSec: number;
   targetSec: number;
-  size?: number;
   label: string;
+  /** Width classes; the dial is square and scales with them. */
+  className?: string;
 };
 
 /** Skeuomorphic dial: a progress arc toward the target, a sweeping minute hand and a seconds hand. */
-export function WallClock({ elapsedSec, targetSec, label, size = 280 }: Props) {
+export function WallClock({ elapsedSec, targetSec, label, className = "w-[min(85vw,26rem)]" }: Props) {
   const c = 100;
   const r = 86;
   const circ = 2 * Math.PI * r;
@@ -18,11 +19,9 @@ export function WallClock({ elapsedSec, targetSec, label, size = 280 }: Props) {
   return (
     <svg
       viewBox="0 0 200 200"
-      width={size}
-      height={size}
       role="img"
       aria-label={label}
-      className="max-w-full"
+      className={`aspect-square h-auto max-w-full ${className}`}
     >
       <circle cx={c} cy={c} r={96} fill="var(--card)" stroke="var(--border)" strokeWidth={4} />
       <circle cx={c} cy={c} r={r} fill="none" stroke="var(--border)" strokeWidth={6} />
