@@ -37,11 +37,11 @@ export function Heatmap({
 
   const grid = (
     <>
-      {/* One grid: cells stretch to fill the width, never below 10 px; narrower screens scroll. */}
+      {/* One grid: cells stretch to fill the width, never below 12 px (a tappable size); narrower screens scroll. */}
       <div className="overflow-x-auto pb-1">
         <div
           className="grid gap-[3px]"
-          style={{ gridTemplateColumns: `auto repeat(${weeks.length}, minmax(10px, 1fr))`, minWidth: weeks.length * 13 + 32 }}
+          style={{ gridTemplateColumns: `auto repeat(${weeks.length}, minmax(12px, 1fr))`, minWidth: weeks.length * 15 + 32 }}
         >
           {monthLabels.map((m, i) => (
             <span

@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BRAND, markSvg } from "@/lib/brand";
 
 export const alt = "track-pro: every focused hour becomes a square you can see";
 export const size = { width: 1200, height: 630 };
@@ -24,12 +25,16 @@ export default function Image() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: 72,
-          background: "#0a0a0b",
-          color: "#ededed",
+          background: BRAND.ground,
+          color: BRAND.ink,
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ fontSize: 30, color: "#10b981", fontFamily: "monospace" }}>track-pro</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 34, fontWeight: 600, letterSpacing: -0.7 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse renders plain img only */}
+            <img src={`data:image/svg+xml;utf8,${encodeURIComponent(markSvg())}`} width={42} height={42} alt="" />
+            track-pro
+          </div>
           <div style={{ fontSize: 64, fontWeight: 700, lineHeight: 1.1, maxWidth: 900 }}>
             Every focused hour becomes a square you can see.
           </div>

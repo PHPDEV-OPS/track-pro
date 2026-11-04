@@ -28,7 +28,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/dashbo
       <ThemeSync theme={settings.theme} />
       <TimezoneDetect timezone={settings.timezone} />
       {/* Split from 1024 px: the timer stays in view while history scrolls (spec 0006 AC-3). */}
-      <main className="mx-auto grid w-full max-w-6xl flex-1 content-start items-start gap-6 px-4 py-6 lg:grid-cols-[400px_minmax(0,1fr)]">
+      <main className="mx-auto grid w-full max-w-6xl flex-1 content-start items-start gap-6 px-4 py-6 grid-cols-[minmax(0,1fr)] lg:grid-cols-[400px_minmax(0,1fr)]">
         <FocusClock
           userId={userId}
           initialSession={session}

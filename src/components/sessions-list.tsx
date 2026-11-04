@@ -72,7 +72,7 @@ export function SessionsList({
       {failed ? (
         <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm">
           Couldn&apos;t load sessions.
-          <button type="button" onClick={() => load(null)} className="h-9 rounded-lg border border-border px-3">
+          <button type="button" onClick={() => load(null)} className="h-11 shrink-0 whitespace-nowrap rounded-lg border border-border px-3">
             Try again
           </button>
         </div>

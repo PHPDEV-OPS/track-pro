@@ -59,7 +59,7 @@ export function History({ stats }: { stats: PeriodStats }) {
               type="button"
               aria-pressed={stats.view === v}
               onClick={() => stats.view !== v && go(v)}
-              className={`h-9 rounded-md px-4 text-sm ${stats.view === v ? "bg-accent-soft font-semibold" : "text-muted hover:text-foreground"}`}
+              className={`h-11 rounded-md px-4 text-sm ${stats.view === v ? "bg-accent-soft font-semibold" : "text-muted hover:text-foreground"}`}
             >
               {VIEW_LABEL[v]}
             </button>

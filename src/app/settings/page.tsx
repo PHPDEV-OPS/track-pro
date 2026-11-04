@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AppHeader } from "@/components/app-header";
-import { SETTINGS_SECTIONS, SettingsForm } from "@/components/settings-form";
+import { SettingsForm } from "@/components/settings-form";
+import { SETTINGS_SECTIONS } from "@/lib/settings-sections";
 import { getMusicLinks, getSettings } from "@/lib/queries";
 import { choiceOf } from "@/lib/sounds";
 import { requireUser } from "@/lib/user";

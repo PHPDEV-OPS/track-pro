@@ -164,7 +164,7 @@ export function SoundControl({
   const spotify = links.find((l) => l.id === linkId)?.provider === "SPOTIFY";
   return (
     <div role="group" aria-label="Sound" className="flex flex-col items-center gap-3 border-t border-border pt-5">
-      <div className="grid w-full grid-cols-[auto_minmax(0,auto)_minmax(0,1fr)_auto] items-center gap-3 text-sm">
+      <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 text-sm">
         {off ? (
           <VolumeX className="size-4 text-muted" aria-hidden />
         ) : linkId ? (
@@ -172,7 +172,7 @@ export function SoundControl({
         ) : (
           <Volume2 className="size-4 text-accent" aria-hidden />
         )}
-        <SoundSelect choice={choice} links={links} onChange={onChoice} className="max-w-44" />
+        <SoundSelect choice={choice} links={links} onChange={onChoice} className="col-span-2 w-full" />
         <input
           type="range"
           min={0}
@@ -184,7 +184,7 @@ export function SoundControl({
           aria-valuetext={`${volume}%`}
           aria-describedby={spotify ? "spotify-volume-hint" : undefined}
           onChange={(e) => onVolume(Number(e.target.value))}
-          className="w-full min-w-0 accent-[var(--accent)] disabled:opacity-40"
+          className="col-start-2 h-11 w-full min-w-0 accent-[var(--accent)] disabled:opacity-40"
         />
         <span className="w-9 text-right font-mono text-xs tabular-nums text-muted" aria-hidden>
           {volume}
@@ -196,7 +196,7 @@ export function SoundControl({
         </p>
       )}
       {links.length < 5 && (
-        <Link href="/settings#sound" className="text-xs text-muted underline-offset-4 hover:text-foreground hover:underline">
+        <Link href="/settings#sound" className="inline-flex min-h-11 items-center px-2 text-xs text-muted underline-offset-4 hover:text-foreground hover:underline">
           {links.length ? "Add music" : "Add music from YouTube or Spotify"}
         </Link>
       )}

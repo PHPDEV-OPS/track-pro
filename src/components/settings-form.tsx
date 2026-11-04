@@ -29,13 +29,6 @@ export function ThemeSync({ theme }: { theme: string }) {
 
 const noop = () => () => {};
 
-export const SETTINGS_SECTIONS = [
-  { id: "timer", label: "Timer" },
-  { id: "appearance", label: "Appearance" },
-  { id: "sound", label: "Sound and music" },
-  { id: "time", label: "Time and region" },
-] as const;
-
 function Section({ id, title, hint, children }: { id: string; title: string; hint?: string; children: React.ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-6 space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
@@ -109,7 +102,7 @@ export function SettingsForm({
                 name="clock"
                 defaultChecked={clockStyle === c}
                 onChange={() => start(async () => void (await updateSettings({ clockStyle: c })))}
-                className="accent-[var(--color-accent)]"
+                className="accent-[var(--accent)]"
               />
               {c === "DIGITAL" ? "Digital, with a progress ring" : "Wall clock"}
             </label>
@@ -143,9 +136,9 @@ export function SettingsForm({
 
       <Section id="sound" title="Sound and music" hint="Plays while a session runs. You can also change it from the timer.">
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <label className="flex items-center gap-2">
+          <label className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:max-w-xs">
             <span className="text-muted">Sound</span>
-            <SoundSelect label="Sound" choice={sound.choice} links={musicLinks} onChange={sound.setChoice} />
+            <SoundSelect label="Sound" choice={sound.choice} links={musicLinks} onChange={sound.setChoice} className="w-full" />
           </label>
           <label className="flex flex-1 items-center gap-3">
             <span className="text-muted">Volume</span>
@@ -157,7 +150,7 @@ export function SettingsForm({
               disabled={sound.choice === "OFF"}
               aria-valuetext={`${sound.volume}%`}
               onChange={(e) => sound.setVolume(Number(e.target.value))}
-              className="min-w-32 flex-1 accent-[var(--color-accent)] disabled:opacity-40"
+              className="h-11 min-w-32 flex-1 accent-[var(--accent)] disabled:opacity-40"
             />
             <span className="w-9 text-right font-mono text-xs tabular-nums text-muted">{sound.volume}</span>
           </label>

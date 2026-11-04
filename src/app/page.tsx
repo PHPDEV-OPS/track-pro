@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buildDays } from "@/lib/heatmap";
 import { Heatmap } from "@/components/heatmap";
+import { Wordmark } from "@/components/logo";
 
 // Decorative sample so the landing page shows the product without needing an account.
 function sample() {
@@ -23,7 +24,7 @@ export default function Home() {
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center gap-10 px-4 py-16">
       <div className="space-y-4">
-        <p className="font-mono text-sm text-accent">track-pro</p>
+        <Wordmark className="text-lg" />
         <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
           Every focused hour becomes a square you can see.
         </h1>

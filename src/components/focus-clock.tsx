@@ -322,7 +322,7 @@ export function FocusClock({
       : remaining < 0
         ? "Overtime"
         : "Focusing";
-  const ctrl = "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm";
+  const ctrl = "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm";
 
   return (
     <section
@@ -331,7 +331,7 @@ export function FocusClock({
       className={
         full
           ? "flex flex-col items-center justify-center gap-6 bg-background p-6"
-          : "flex flex-col gap-6 rounded-xl border border-border bg-card p-6 lg:sticky lg:top-6"
+          : "flex flex-col gap-6 rounded-xl border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-6"
       }
     >
       {session && clockStyle === "WALL_CLOCK" ? (
@@ -429,6 +429,7 @@ export function FocusClock({
         </form>
       ) : (
         <div className="flex w-full max-w-sm flex-wrap items-center justify-center gap-2 self-center">
+          <div className="flex min-w-[12rem] flex-1 gap-2">
           {running ? (
             <button
               type="button"
@@ -468,6 +469,8 @@ export function FocusClock({
           >
             <Square className="size-4" aria-hidden /> Complete
           </button>
+          </div>
+          <div className="flex gap-2">
           <button
             type="button"
             aria-label="Discard session"
@@ -494,6 +497,7 @@ export function FocusClock({
           >
             {full ? <Minimize2 className="size-4" aria-hidden /> : <Maximize2 className="size-4" aria-hidden />}
           </button>
+          </div>
         </div>
       )}
       {(offline || queued > 0) && (
