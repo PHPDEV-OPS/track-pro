@@ -22,7 +22,8 @@ export async function getHeatmap(userId: string, timezone: string) {
     .select({ day: dayExpr, sec: sql<number>`sum(${timeEntries.durationSec})::int` })
     .from(timeEntries)
     .where(and(eq(timeEntries.userId, userId), gte(timeEntries.startedAt, from)))
-    .groupBy(dayExpr);
+    // Group by position: repeating dayExpr binds tz as a second param, which Postgres won't match to the select.
+    .groupBy(sql`1`);
   const secByDay = Object.fromEntries(rows.map((r) => [r.day, r.sec]));
   return { today, cells: buildDays(today, secByDay) };
 }
