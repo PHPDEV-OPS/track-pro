@@ -16,6 +16,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    // Integration tests talk to a remote Neon branch; several take about 5 s, the default timeout.
+    testTimeout: 20_000,
     // Tests only ever see the test branch; integration suites skip when it is unset.
     env: { DATABASE_URL: testDb },
   },
