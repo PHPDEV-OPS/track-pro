@@ -147,6 +147,7 @@ export function SoundControl({
   onVolume,
   needsTap,
   onTap,
+  display = false,
   children,
 }: {
   choice: SoundChoice;
@@ -156,14 +157,29 @@ export function SoundControl({
   onVolume: (v: number) => void;
   needsTap: boolean;
   onTap: () => void;
+  /** Display mode: hide the picker and slider, show only what is playing. */
+  display?: boolean;
   /** The music card, when a link is picked. */
   children?: React.ReactNode;
 }) {
   const off = choice === "OFF";
   const linkId = linkIdOf(choice);
   const spotify = links.find((l) => l.id === linkId)?.provider === "SPOTIFY";
+  const playing = linkId ? links.find((l) => l.id === linkId)?.title : off ? null : SOUND_LABEL[choice as keyof typeof SOUND_LABEL];
   return (
-    <div role="group" aria-label="Sound" className="flex flex-col items-center gap-3 border-t border-border pt-5">
+    <div
+      role="group"
+      aria-label="Sound"
+      className={display ? "flex flex-col items-center gap-3" : "flex flex-col items-center gap-3 border-t border-border pt-5"}
+    >
+      {display ? (
+        playing ? (
+          <p className="inline-flex max-w-[80vw] items-center gap-2 text-base text-muted">
+            {linkId ? <Music className="size-4 shrink-0 text-accent" aria-hidden /> : <Volume2 className="size-4 shrink-0 text-accent" aria-hidden />}
+            <span className="truncate">{playing}</span>
+          </p>
+        ) : null
+      ) : (
       <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 text-sm">
         {off ? (
           <VolumeX className="size-4 text-muted" aria-hidden />
@@ -190,12 +206,13 @@ export function SoundControl({
           {volume}
         </span>
       </div>
-      {spotify && (
+      )}
+      {spotify && !display && (
         <p id="spotify-volume-hint" className="text-xs text-muted">
           Use Spotify&apos;s own volume.
         </p>
       )}
-      {links.length < 5 && (
+      {links.length < 5 && !display && (
         <Link href="/settings#sound" className="inline-flex min-h-11 items-center px-2 text-xs text-muted underline-offset-4 hover:text-foreground hover:underline">
           {links.length ? "Add music" : "Add music from YouTube or Spotify"}
         </Link>

@@ -130,12 +130,44 @@ export function FocusClock({
   const replaying = useRef(false);
   const offline = !online || netFailed;
 
-  // Focus mode: the timer panel goes full screen with a huge clock (good for recording).
+  // Display mode: the timer panel goes full screen with only the clock and what is playing, ready to
+  // cast (Chrome "Cast tab") or move to a second screen. Controls hide until you move, tap or press a key.
   useEffect(() => {
     const onChange = () => setFull(document.fullscreenElement === panel.current);
     document.addEventListener("fullscreenchange", onChange);
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
+
+  const [chrome, setChrome] = useState(true);
+  const chromeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const wake = useCallback(() => {
+    setChrome(true);
+    clearTimeout(chromeTimer.current);
+    chromeTimer.current = setTimeout(() => setChrome(false), 3000);
+  }, []);
+  useEffect(() => {
+    if (!full) return;
+    const id = setTimeout(wake, 0);
+    return () => {
+      clearTimeout(id);
+      clearTimeout(chromeTimer.current);
+    };
+  }, [full, wake]);
+
+  // Keep the screen awake while displaying; the browser drops the lock when the tab hides, so take it again.
+  useEffect(() => {
+    if (!full || !("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    const take = () => {
+      if (document.visibilityState === "visible") navigator.wakeLock.request("screen").then((l) => (lock = l), () => {});
+    };
+    take();
+    document.addEventListener("visibilitychange", take);
+    return () => {
+      document.removeEventListener("visibilitychange", take);
+      void lock?.release();
+    };
+  }, [full]);
 
   function toggleFull() {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -255,6 +287,10 @@ export function FocusClock({
     ambient().unlock();
   }
 
+  useEffect(() => {
+    if (full && !session && document.fullscreenElement) void document.exitFullscreen();
+  }, [full, session]);
+
   const elapsed = session ? elapsedSec(session, now) : 0;
   const remaining = session ? session.targetSec - elapsed : 0;
 
@@ -311,6 +347,22 @@ export function FocusClock({
       : `${formatClock(remaining)} overtime`
     : "No active session";
 
+  function onDisplayKey(e: React.KeyboardEvent) {
+    wake();
+    // Browsers usually exit full screen on Esc themselves; this covers the ones that pass it to the page.
+    if (e.key === "Escape" && !completing && document.fullscreenElement) {
+      void document.exitFullscreen();
+      return;
+    }
+    if (e.key !== " " || !session || completing || (e.target as HTMLElement).closest("button,input,select,textarea")) return;
+    e.preventDefault();
+    if (running) act({ op: "pause" });
+    else {
+      unlockAudio();
+      act({ op: "resume" });
+    }
+  }
+
   const preview = Number(mins) * (unit === "hr" ? 3600 : 60) || 0;
   const clockText = formatClock(session ? remaining : preview);
   const progress = session ? Math.min(1, elapsed / session.targetSec) : 0;
@@ -327,9 +379,13 @@ export function FocusClock({
     <section
       ref={panel}
       aria-label="Focus timer"
+      tabIndex={full ? -1 : undefined}
+      onPointerMove={full ? wake : undefined}
+      onPointerDown={full ? wake : undefined}
+      onKeyDown={full ? onDisplayKey : undefined}
       className={
         full
-          ? "flex flex-col items-center justify-center gap-6 bg-background p-6"
+          ? `relative flex flex-col items-center justify-center gap-8 bg-background px-6 pt-6 pb-32 outline-none ${chrome ? "" : "cursor-none"}`
           : "flex flex-col gap-6 rounded-xl border border-border bg-card p-4 sm:p-6 lg:sticky lg:top-6"
       }
     >
@@ -364,7 +420,10 @@ export function FocusClock({
               style={{ width: `${progress * 100}%` }}
             />
           </div>
-          <p className="text-sm text-muted">{status}</p>
+          <p className={full ? "text-xl text-muted" : "text-sm text-muted"}>{status}</p>
+          {full && session && (
+            <p className="-mt-2 font-mono text-base tabular-nums text-muted">Target {formatLed(session.targetSec)}</p>
+          )}
         </div>
       )}
       <p className="sr-only" role="timer" aria-live="off">
@@ -431,7 +490,16 @@ export function FocusClock({
           {offline && <p className="text-xs text-muted">Needs a connection</p>}
         </form>
       ) : (
-        <div className="flex w-full max-w-sm flex-wrap items-center justify-center gap-2 self-center">
+        // In display mode the controls float at the bottom and fade out after 3 s without input.
+        <div
+          className={
+            full
+              ? `fixed inset-x-0 bottom-8 mx-auto flex w-full max-w-sm flex-wrap items-center justify-center gap-2 px-4 transition-opacity duration-300 ${
+                  chrome ? "opacity-100" : "pointer-events-none opacity-0"
+                }`
+              : "flex w-full max-w-sm flex-wrap items-center justify-center gap-2 self-center"
+          }
+        >
           <div className="flex min-w-[12rem] flex-1 gap-2">
           {running ? (
             <button
@@ -474,6 +542,8 @@ export function FocusClock({
           </button>
           </div>
           <div className="flex gap-2">
+          {/* Discard stays off the display; it is one tap away when you exit. */}
+          {!full && (
           <button
             type="button"
             aria-label="Discard session"
@@ -491,10 +561,11 @@ export function FocusClock({
           >
             <X className="size-4" aria-hidden />
           </button>
+          )}
           <button
             type="button"
-            aria-label={full ? "Exit focus mode" : "Enter focus mode"}
-            title={full ? "Exit focus mode (Esc)" : "Focus mode"}
+            aria-label={full ? "Exit display mode" : "Enter display mode"}
+            title={full ? "Exit display mode (Esc)" : "Display mode: just the clock, to cast or put on a second screen"}
             onClick={toggleFull}
             className={`${ctrl} w-11 border border-border px-0 text-muted`}
           >
@@ -527,6 +598,7 @@ export function FocusClock({
         onVolume={setVolume}
         needsTap={running && sound !== "OFF" && !audioOn}
         onTap={() => unlockAudio()}
+        display={full}
       >
         {musicLink && (
           <MusicCard
