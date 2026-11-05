@@ -92,6 +92,15 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* The LED clock's glow: a tight bloom plus a wide halo, both from the theme accent (spec 0006 clock). */
+.led-glow {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 70%, transparent))
+    drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+.led-halo {
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+}
+
 /* Tailwind v4 leaves buttons with the default cursor; everything clickable gets the pointer. */
 button:not(:disabled),
 select:not(:disabled),

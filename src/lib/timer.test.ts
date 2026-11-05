@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { elapsedSec, formatClock, remainingSec } from "./timer";
+import { elapsedSec, formatClock, formatLed, LED_SEGMENTS, remainingSec } from "./timer";
 
 const t0 = new Date("2026-01-01T10:00:00Z").getTime();
 
@@ -24,5 +24,21 @@ describe("remaining and format", () => {
     expect(remainingSec(s, t0 + 90_000)).toBe(-30);
     expect(formatClock(-30)).toBe("+00:30");
     expect(formatClock(3725)).toBe("1:02:05");
+  });
+});
+
+describe("LED clock", () => {
+  it("always shows HH:MM:SS, with a + in overtime", () => {
+    expect(formatLed(1500)).toBe("00:25:00");
+    expect(formatLed(10033)).toBe("02:47:13");
+    expect(formatLed(-192)).toBe("+00:03:12");
+    expect(formatLed(0)).toBe("00:00:00");
+  });
+  it("lights the right segments for each digit", () => {
+    expect(Object.keys(LED_SEGMENTS)).toHaveLength(10);
+    expect(LED_SEGMENTS["8"]).toBe("abcdefg");
+    expect(LED_SEGMENTS["1"]).toBe("bc");
+    // Every digit uses only the seven known segments.
+    for (const segs of Object.values(LED_SEGMENTS)) expect(segs).toMatch(/^[a-g]+$/);
   });
 });

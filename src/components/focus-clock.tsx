@@ -28,11 +28,11 @@ import {
 } from "@/lib/offline-queue";
 import type { MusicLink } from "@/db/schema";
 import { builtInOf, linkIdOf, type SoundChoice } from "@/lib/sounds";
-import { elapsedSec, formatClock, MIN_SAVE_SEC } from "@/lib/timer";
+import { elapsedSec, formatClock, formatLed, MIN_SAVE_SEC } from "@/lib/timer";
 import { CompleteDialog } from "./complete-dialog";
 import { MusicCard } from "./music-card";
 import { SoundControl, useSoundSettings } from "./sound-control";
-import { ProgressRing } from "./progress-ring";
+import { SegmentClock } from "./segment-clock";
 import { WallClock } from "./wall-clock";
 
 const STORE = "trackpro.session";
@@ -313,8 +313,7 @@ export function FocusClock({
 
   const preview = Number(mins) * (unit === "hr" ? 3600 : 60) || 0;
   const clockText = formatClock(session ? remaining : preview);
-  // Long times (1:02:05) get a smaller size so they always fit inside the ring.
-  const clockSize = clockText.length > 6 ? "text-[15cqw]" : "text-[19cqw]";
+  const progress = session ? Math.min(1, elapsed / session.targetSec) : 0;
   const status = !session
     ? "Ready"
     : session.status === "PAUSED"
@@ -348,21 +347,25 @@ export function FocusClock({
           <p className="mt-1 text-sm text-muted">{status}</p>
         </div>
       ) : (
-        <ProgressRing
-          progress={session ? elapsed / session.targetSec : 0}
-          paused={session?.status === "PAUSED"}
-          className={full ? "w-[min(70vh,90vw)]" : "mx-auto w-full max-w-[320px]"}
-        >
-          <p
-            aria-hidden
-            className={`font-mono font-semibold leading-none tracking-tight tabular-nums ${clockSize} ${
-              !session ? "text-muted" : remaining < 0 ? "text-accent" : ""
+        // The LED clock: always HH:MM:SS in the theme accent with a glow; idle shows the target, unlit.
+        <div className={`led-halo mx-auto flex w-full flex-col items-center gap-5 ${full ? "max-w-[min(90vw,150vh)] py-10" : "py-6"}`}>
+          <SegmentClock
+            text={formatLed(session ? remaining : preview)}
+            className={`w-full ${full ? "" : "max-w-[340px]"} ${session ? "led-glow text-accent" : "text-muted"} ${
+              session?.status === "PAUSED" ? "opacity-60" : ""
             }`}
-          >
-            {clockText}
-          </p>
-          <p className="mt-3 text-sm text-muted">{status}</p>
-        </ProgressRing>
+          />
+          {/* A thin progress bar in place of the ring: full and glowing in overtime, dimmed while paused. */}
+          <div className={`h-1.5 w-full overflow-hidden rounded-full bg-border ${full ? "max-w-[min(80vw,130vh)]" : "max-w-[300px]"}`} aria-hidden>
+            <div
+              className={`h-full rounded-full bg-accent transition-[width,opacity] duration-200 ease-out ${session ? "led-glow" : ""} ${
+                session?.status === "PAUSED" ? "opacity-40" : ""
+              }`}
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+          <p className="text-sm text-muted">{status}</p>
+        </div>
       )}
       <p className="sr-only" role="timer" aria-live="off">
         {label}
